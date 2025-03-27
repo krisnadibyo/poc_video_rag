@@ -5,4 +5,5 @@
 *.mkv
 *.flv
 *.wmv
-myenv/lib
+# ignore all files in myenv/lib
+myenv/lib/*
