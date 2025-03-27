@@ -6,4 +6,4 @@
 *.flv
 *.wmv
 # ignore all files in myenv/lib
-myenv/lib/*
+myenv/
