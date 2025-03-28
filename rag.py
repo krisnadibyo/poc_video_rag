@@ -1,3 +1,4 @@
+import time
 from langchain_openai import OpenAIEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.vectorstores import InMemoryVectorStore
@@ -16,6 +17,7 @@ import os
 load_dotenv()
 
 def download_video(url: str):
+  print(f"Downloading video...")
   yt = YouTube(url)
   file_name = f"{yt.title.replace(' ', '_')}.mp3"
   output_path = "audio"
@@ -41,6 +43,7 @@ def get_vector_store(embeddings):
   return vector_store
 
 def transcribe_video(file_path: str):
+  print(f"Transcribing video...")
   model = whisper.load_model("tiny", device="cpu")
   result = model.transcribe(file_path)
   text = result["text"]
@@ -61,11 +64,6 @@ def split_transcript(transcript: str):
   text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
   all_splits = text_splitter.split_documents(transcript)
   return all_splits
-
-class State(TypedDict):
-  question: str
-  answer: str 
-  context: List[Document]
 
 def retreive(vector_store, question: str):
   retrieve_docs = vector_store.similarity_search(question)
@@ -88,20 +86,24 @@ if __name__ == "__main__":
   file_name = transcribe_video(download_video(input_url))
 
   # load the transcript
-  transcript = load_transcript("transcripts/transcript_3.txt")
+  transcript = load_transcript(file_name)
 
   # split the transcript into chunks
+  print(f"Splitting transcript into chunks...")
   all_splits = split_transcript(transcript)
 
   # Index the chunks
+  print(f"Indexing chunks...")
   vector_store = get_vector_store(get_embeddings())
   _ = vector_store.add_documents(all_splits)
 
-  question = question + " -- This is a question from a video transcript as RAG context"
 
   # retrieve the most relevant documents
+  question = question + " -- This is a question from a video transcript as RAG context"
+  print(f"Retrieving most relevant documents...")
   retrieve_docs = retreive(vector_store, question)
 
   # generate the answer
+  print(f"Generating answer...")
   response = generate_answer(get_chat_model(), question, retrieve_docs)
-  print(response)
+  print("Answer: ", response)
