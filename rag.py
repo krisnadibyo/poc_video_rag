@@ -76,6 +76,16 @@ def generate_answer(llm, question: str, docs: List[Document]):
   answer = llm.invoke(prompt)
   return answer.content
 
+def rag_video(question: str, url_video: str):
+  file_name = download_video(url_video)
+  transcript = transcribe_video(file_name)
+  transcript = load_transcript(transcript)
+  all_splits = split_transcript(transcript)
+  vector_store = get_vector_store(get_embeddings())
+  _ = vector_store.add_documents(all_splits)
+  retrieve_docs = retreive(vector_store, question)
+  response = generate_answer(get_chat_model(), question, retrieve_docs)
+  return response
 
 if __name__ == "__main__":
   # get the question and url from the user
