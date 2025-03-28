@@ -1,5 +1,9 @@
 # Installation
 
+## Pre-Requisite
+- OpenAI API Key &rarr; [Create OpenAI Key](https://platform.openai.com/docs/overview)
+- Langsmith API Key &rarr; [Create Langsmith Key](https://smith.langchain.com/)
+
 ## Clone Project
 - `git clone <repo_url>`
 
