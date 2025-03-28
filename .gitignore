@@ -7,3 +7,4 @@
 *.wmv
 # ignore all files in myenv/lib
 myenv/
+.env
