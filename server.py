@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from openai import BaseModel
 
-from rag import rag_video
+from rag import answer_question, ingest_video
 
 
 app = FastAPI(
@@ -14,11 +14,20 @@ app = FastAPI(
 async def root():
   return {"message": "Hello World"}
 
-class RAGRequest(BaseModel):
+class IngestRequest(BaseModel):
+  url_video: str
+  video_id: str
+class RagRequest(BaseModel):
+  video_id: str
   question: str
-  url_video: str  
+
+@app.post("/api/v1/ingest")
+async def ingest(request: IngestRequest):
+  ingest_video(request.url_video, request.video_id)
+  return {"Status": "success"}
+
 
 @app.post("/api/v1/rag")
-async def rag(request: RAGRequest):
-  answer = rag_video(request.question, request.url_video)
+async def rag(request: RagRequest):
+  answer = answer_question(request.question, request.video_id)
   return {"answer": answer}

@@ -15,6 +15,9 @@ import whisper
 import os
 
 load_dotenv()
+llm = init_chat_model(model="gpt-4o-mini", model_provider="openai")
+embeddings = OpenAIEmbeddings(model="text-embedding-3-large")
+vector_store = InMemoryVectorStore(embeddings)
 
 def download_video(url: str):
   print(f"Downloading video...")
@@ -26,21 +29,21 @@ def download_video(url: str):
   yt.streams.filter(only_audio=True).first().download(output_path=output_path, filename=file_name)
   return f"{output_path}/{file_name}"
 
-def get_chat_model():
-  if not os.environ.get("OPENAI_API_KEY"):
-    raise ValueError("OPENAI_API_KEY is not set")
-  llm = init_chat_model(model="gpt-4o-mini", model_provider="openai")
-  return llm
+# def get_chat_model():
+#   if not os.environ.get("OPENAI_API_KEY"):
+#     raise ValueError("OPENAI_API_KEY is not set")
+#   llm = init_chat_model(model="gpt-4o-mini", model_provider="openai")
+#   return llm
 
-def get_embeddings():
-  if not os.environ.get("OPENAI_API_KEY"):
-    raise ValueError("OPENAI_API_KEY is not set")
-  embeddings = OpenAIEmbeddings(model="text-embedding-3-large")
-  return embeddings
+# def get_embeddings():
+#   if not os.environ.get("OPENAI_API_KEY"):
+#     raise ValueError("OPENAI_API_KEY is not set")
+#   embeddings = OpenAIEmbeddings(model="text-embedding-3-large")
+#   return embeddings
 
-def get_vector_store(embeddings):
-  vector_store = InMemoryVectorStore(embeddings)
-  return vector_store
+# def get_vector_store(embeddings):
+#   vector_store = InMemoryVectorStore(embeddings)
+#   return vector_store
 
 def transcribe_video(file_path: str):
   print(f"Transcribing video...")
@@ -53,6 +56,8 @@ def transcribe_video(file_path: str):
   file_name = file_path.split('/')[-1].split('.')[0]
   with open(f"{output_path}/{file_name}.txt", "w") as f:
     f.write(text)
+  # delete the audio file
+  os.remove(file_path)
   return f"{output_path}/{file_name}.txt"
 
 def load_transcript(file_path: str):
@@ -60,13 +65,19 @@ def load_transcript(file_path: str):
   docs = loader.load()
   return docs
   
-def split_transcript(transcript: str):
-  text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+def split_transcript(transcript: str, video_id: str):
+  text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=150)
   all_splits = text_splitter.split_documents(transcript)
+  print(len(all_splits))
+  for doc in all_splits:
+    doc.metadata.update({"video_id": video_id})
   return all_splits
 
-def retreive(vector_store, question: str):
-  retrieve_docs = vector_store.similarity_search(question)
+def retreive(vector_store, question: str, video_id: str):
+  def _filter_document(doc: Document) -> bool:
+    return doc.metadata.get("video_id", None) == video_id
+  retrieve_docs = vector_store.similarity_search(question, k= 1, filter=_filter_document)
+  print(len(retrieve_docs))
   return retrieve_docs
 
 def generate_answer(llm, question: str, docs: List[Document]):
@@ -76,16 +87,27 @@ def generate_answer(llm, question: str, docs: List[Document]):
   answer = llm.invoke(prompt)
   return answer.content
 
-def rag_video(question: str, url_video: str):
+def ingest_video(url_video: str, video_id: str):
   file_name = download_video(url_video)
   transcript = transcribe_video(file_name)
   transcript = load_transcript(transcript)
-  all_splits = split_transcript(transcript)
-  vector_store = get_vector_store(get_embeddings())
-  _ = vector_store.add_documents(all_splits)
-  retrieve_docs = retreive(vector_store, question)
-  response = generate_answer(get_chat_model(), question, retrieve_docs)
+  all_splits = split_transcript(transcript, video_id)
+  vector_store.add_documents(all_splits)
+
+def answer_question(question: str, video_id: str):
+  retrieve_docs = retreive(vector_store, question, video_id)
+  response = generate_answer(llm, question, retrieve_docs)
   return response
+
+# def rag_video(question: str, url_video: str):
+#   file_name = download_video(url_video)
+#   transcript = transcribe_video(file_name)
+#   transcript = load_transcript(transcript)
+#   all_splits = split_transcript(transcript)
+#   vector_store.add_documents(all_splits)
+#   retrieve_docs = retreive(vector_store, question)
+#   response = generate_answer(llm, question, retrieve_docs)
+#   return response
 
 if __name__ == "__main__":
   # get the question and url from the user
@@ -104,8 +126,7 @@ if __name__ == "__main__":
 
   # Index the chunks
   print(f"Indexing chunks...")
-  vector_store = get_vector_store(get_embeddings())
-  _ = vector_store.add_documents(all_splits)
+  vector_store.add_documents(all_splits)
 
 
   # retrieve the most relevant documents
@@ -115,5 +136,5 @@ if __name__ == "__main__":
 
   # generate the answer
   print(f"Generating answer...")
-  response = generate_answer(get_chat_model(), question, retrieve_docs)
+  response = generate_answer(llm, question, retrieve_docs)
   print("Answer: ", response)
