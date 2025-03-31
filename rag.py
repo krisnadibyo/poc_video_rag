@@ -19,10 +19,10 @@ llm = init_chat_model(model="gpt-4o-mini", model_provider="openai")
 embeddings = OpenAIEmbeddings(model="text-embedding-3-large")
 vector_store = InMemoryVectorStore(embeddings)
 
-def download_video(url: str):
+def download_video(url: str, video_id: str):
   print(f"Downloading video...")
   yt = YouTube(url)
-  file_name = f"{yt.title.replace(' ', '_')}.mp3"
+  file_name = f"{video_id}.mp3"
   output_path = "audio"
   if not os.path.exists(output_path):
     os.makedirs(output_path)
@@ -88,7 +88,7 @@ def generate_answer(llm, question: str, docs: List[Document]):
   return answer.content
 
 def ingest_video(url_video: str, video_id: str):
-  file_name = download_video(url_video)
+  file_name = download_video(url_video, video_id)
   transcript = transcribe_video(file_name)
   transcript = load_transcript(transcript)
   all_splits = split_transcript(transcript, video_id)

@@ -1,18 +1,23 @@
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI, HTTPException
 from openai import BaseModel
-
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from rag import answer_question, ingest_video
+from dotenv import load_dotenv
+import os
 
+load_dotenv()
 
 app = FastAPI(
   title="RAG API",
   description="A simple API for RAG",
   version="0.1.0"
 )
+security = HTTPBasic()
 
-@app.get("/")
-async def root():
-  return {"message": "Hello World"}
+def is_client_valid(credentials: HTTPBasicCredentials = Depends(security)):
+  if credentials.username != os.getenv("ADMIN_USERNAME") or credentials.password != os.getenv("ADMIN_PASSWORD"):
+    return False
+  return True
 
 class IngestRequest(BaseModel):
   url_video: str
@@ -22,12 +27,22 @@ class RagRequest(BaseModel):
   question: str
 
 @app.post("/api/v1/ingest")
-async def ingest(request: IngestRequest):
+async def ingest(request: IngestRequest, is_client_valid: bool = Depends(is_client_valid)):
+  if not is_client_valid:
+    raise HTTPException(
+      status_code=401,
+      detail="Invalid Authentication credentials"
+    )
   ingest_video(request.url_video, request.video_id)
   return {"Status": "success"}
 
 
 @app.post("/api/v1/rag")
-async def rag(request: RagRequest):
+async def rag(request: RagRequest, is_client_valid: bool = Depends(is_client_valid)):
+  if not is_client_valid:
+    raise HTTPException(
+      status_code=401,
+      detail="Invalid Authentication credentials"
+    )
   answer = answer_question(request.question, request.video_id)
   return {"answer": answer}
