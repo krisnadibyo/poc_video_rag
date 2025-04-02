@@ -17,3 +17,6 @@
 ## Run CLI Apps
 - `python rag.py`
 - Input the video url and question on terminal
+
+# Run Server RAG
+- `uvicorn server:app --reload`
