@@ -1,5 +1,4 @@
 import re
-import time
 from langchain_openai import OpenAIEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.vectorstores import InMemoryVectorStore
@@ -108,16 +107,6 @@ def answer_question(question: str, video_id: str):
   retrieve_docs = retrieve(vector_store, question, video_id)
   response = generate_answer(question, retrieve_docs)
   return response
-
-# def rag_video(question: str, url_video: str):
-#   file_name = download_video(url_video)
-#   transcript = transcribe_video(file_name)
-#   transcript = load_transcript(transcript)
-#   all_splits = split_transcript(transcript)
-#   vector_store.add_documents(all_splits)
-#   retrieve_docs = retreive(vector_store, question)
-#   response = generate_answer(llm, question, retrieve_docs)
-#   return response
 
 if __name__ == "__main__":
   # get the question and url from the user
