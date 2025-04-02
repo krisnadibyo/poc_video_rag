@@ -1,3 +1,4 @@
+import re
 import time
 from langchain_openai import OpenAIEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -28,6 +29,22 @@ def download_video(url: str, video_id: str):
     os.makedirs(output_path)
   yt.streams.filter(only_audio=True).first().download(output_path=output_path, filename=file_name)
   return f"{output_path}/{file_name}"
+
+def download_captions(url: str, video_id: str):
+  print(f"Downloading captions...")
+  yt = YouTube(url)
+  caption = yt.captions.get_by_language_code('en')
+  if caption is None:
+    caption = yt.captions.get_by_language_code('id')
+  caption_text = caption.generate_srt_captions()
+  caption_text = re.sub(r'\d+\n', '', caption_text)
+  # remove the timestamps
+  caption_text = re.sub(r'\d{2}:\d{2}:\d{2},\d{3} --> \d{2}:\d{2}:\d{2},', '', caption_text)
+  caption_text = re.sub(r'\n', ' ', caption_text)
+  
+  with open(f"transcripts/{video_id}.txt", "w") as f:
+    f.write(caption_text)
+  return f"transcripts/{video_id}.txt"
 
 # def get_chat_model():
 #   if not os.environ.get("OPENAI_API_KEY"):
@@ -112,29 +129,32 @@ def answer_question(question: str, video_id: str):
 if __name__ == "__main__":
   # get the question and url from the user
   input_url = input("Enter the URL of the video to download: ")
-  question = input("Enter a question: ")
-
-  # download and transcribe the video
-  file_name = transcribe_video(download_video(input_url))
-
-  # load the transcript
-  transcript = load_transcript(file_name)
-
-  # split the transcript into chunks
-  print(f"Splitting transcript into chunks...")
-  all_splits = split_transcript(transcript)
-
-  # Index the chunks
-  print(f"Indexing chunks...")
-  vector_store.add_documents(all_splits)
+  download_captions(input_url, "2")
 
 
-  # retrieve the most relevant documents
-  question = question + " -- This is a question from a video transcript as RAG context"
-  print(f"Retrieving most relevant documents...")
-  retrieve_docs = retreive(vector_store, question)
+  # question = input("Enter a question: ")
 
-  # generate the answer
-  print(f"Generating answer...")
-  response = generate_answer(llm, question, retrieve_docs)
-  print("Answer: ", response)
+  # # download and transcribe the video
+  # file_name = transcribe_video(download_video(input_url))
+
+  # # load the transcript
+  # transcript = load_transcript(file_name)
+
+  # # split the transcript into chunks
+  # print(f"Splitting transcript into chunks...")
+  # all_splits = split_transcript(transcript)
+
+  # # Index the chunks
+  # print(f"Indexing chunks...")
+  # vector_store.add_documents(all_splits)
+
+
+  # # retrieve the most relevant documents
+  # question = question + " -- This is a question from a video transcript as RAG context"
+  # print(f"Retrieving most relevant documents...")
+  # retrieve_docs = retreive(vector_store, question)
+
+  # # generate the answer
+  # print(f"Generating answer...")
+  # response = generate_answer(llm, question, retrieve_docs)
+  # print("Answer: ", response)
