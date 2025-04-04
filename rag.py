@@ -4,9 +4,8 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.vectorstores import InMemoryVectorStore
 from langchain.chat_models import init_chat_model
 from pytubefix import YouTube
-from typing_extensions import List, TypedDict
+from typing_extensions import List
 from langchain_core.documents import Document
-from langgraph.graph import START, StateGraph
 from langchain import hub
 from langchain.document_loaders import TextLoader
 from dotenv import load_dotenv
