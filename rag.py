@@ -61,7 +61,9 @@ def download_captions(url: str, video_id: str):
   # remove the timestamps
   caption_text = re.sub(r'\d{2}:\d{2}:\d{2},\d{3} --> \d{2}:\d{2}:\d{2},', '', caption_text)
   caption_text = re.sub(r'\n', ' ', caption_text)
-  
+
+  if not os.path.exists("transcripts"):
+    os.makedirs("transcripts")
   with open(f"transcripts/{video_id}.txt", "w") as f:
     f.write(caption_text)
   
