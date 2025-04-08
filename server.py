@@ -7,6 +7,9 @@ import os
 
 load_dotenv()
 
+USERNAME = os.getenv("ADMIN_USERNAME")
+PASSWORD = os.getenv("ADMIN_PASSWORD")
+
 app = FastAPI(
   title="RAG API",
   description="A simple API for RAG",
@@ -14,17 +17,18 @@ app = FastAPI(
 )
 security = HTTPBasic()
 
-def is_client_valid(credentials: HTTPBasicCredentials = Depends(security)):
-  if credentials.username != os.getenv("ADMIN_USERNAME") or credentials.password != os.getenv("ADMIN_PASSWORD"):
-    return False
-  return True
-
 class IngestRequest(BaseModel):
   url_video: str
   video_id: str
 class RagRequest(BaseModel):
   video_id: str
   question: str
+
+
+def is_client_valid(credentials: HTTPBasicCredentials = Depends(security)):
+  if credentials.username != USERNAME or credentials.password != PASSWORD:
+    return False
+  return True
 
 @app.post("/api/v1/ingest")
 async def ingest(request: IngestRequest, is_client_valid: bool = Depends(is_client_valid)):
