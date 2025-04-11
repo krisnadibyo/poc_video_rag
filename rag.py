@@ -7,7 +7,7 @@ from pytubefix import YouTube
 from typing_extensions import List
 from langchain_core.documents import Document
 from langchain import hub
-from langchain.document_loaders import TextLoader
+from langchain_community.document_loaders import TextLoader
 from dotenv import load_dotenv
 
 import whisper
